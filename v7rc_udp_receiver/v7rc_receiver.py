@@ -31,8 +31,8 @@ class V7RCReceiver(Node):
         # Pass arguments
         self.max_angular = self.get_parameter('max_angular').value
         self.max_linear = self.get_parameter('max_linear').value
-        self.get_logger().warn(f"Max * Linear * speed = {self.max_linear} m/s, make sure it will not too fast!")
-        self.get_logger().warn(f"Max * Angular * speed = {self.max_angular} rad/s, make sure it will not too fast!")
+        self.get_logger().warn(f"Max *Linear* speed = {self.max_linear} m/s, make sure it will not too fast!")
+        self.get_logger().warn(f"Max *Angular* speed = {self.max_angular} rad/s, make sure it will not too fast!")
 
         # Timer to print the status if receiving command
         self.last_receive_time = 0
