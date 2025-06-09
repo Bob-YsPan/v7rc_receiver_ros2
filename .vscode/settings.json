@@ -1,0 +1,18 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/osboxes/linorobot2_ws/install/v7rc_udp_receiver/lib/python3.10/site-packages",
+        "/home/osboxes/linorobot2_ws/install/vdcs_receiver_node/lib/python3.10/site-packages",
+        "/home/osboxes/linorobot2_ws/install/serial_imu_bridge/lib/python3.10/site-packages",
+        "/home/osboxes/linorobot2_ws/install/micro_ros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/osboxes/linorobot2_ws/install/v7rc_udp_receiver/lib/python3.10/site-packages",
+        "/home/osboxes/linorobot2_ws/install/vdcs_receiver_node/lib/python3.10/site-packages",
+        "/home/osboxes/linorobot2_ws/install/serial_imu_bridge/lib/python3.10/site-packages",
+        "/home/osboxes/linorobot2_ws/install/micro_ros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
+}
