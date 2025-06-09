@@ -11,12 +11,15 @@ Use V7RC app's WiFi-UDP mode as the ROS car's controller!
     cd ~/ros2_ws/src
     ```
 2. Clone this repo under `src` folder!
-3. Build package
+    ```
+    git clone https://github.com/Bob-YsPan/v7rc_receiver_ros2_udp.git v7rc_udp_receiver
+    ```
+4. Build package
     ```
     cd ~/ros2_ws
     colcon build --packages-select v7rc_udp_receiver
     ```
-4. Run it!
+5. Run it!
     ```
     ros2 run v7rc_udp_receiver v7rc_udp_receiver
     ```
@@ -24,10 +27,10 @@ Use V7RC app's WiFi-UDP mode as the ROS car's controller!
     ```
     ros2 run v7rc_udp_receiver v7rc_udp_receiver --ros-args -p max_angular:=2.5 -p max_linear:=1.0
     ```
-5. Find your PC's IP that run this node, connect your phone under same subnet, and then set your V7RC app's connect mode to Wi-Fi, then fill in the setting:
+6. Find your PC's IP that run this node, connect your phone under same subnet, and then set your V7RC app's connect mode to Wi-Fi, then fill in the setting:
     * IP: `Your PC's IP`
     * Port(連接埠): `6188` (Default)
-6. It will auto connect, back to the remote screen, make sure the log like this:
+7. It will auto connect, back to the remote screen, make sure the log like this:
     ```
     [INFO] [1749478043.049440469] [v7rc_udp_receiver]: UDP listening on 0.0.0.0:6188
     [INFO] [1749478064.075538138] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!
@@ -44,4 +47,4 @@ Use V7RC app's WiFi-UDP mode as the ROS car's controller!
     [INFO] [1749478083.329775143] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!
     [WARN] [1749478083.330704208] [v7rc_udp_receiver]: Data Invaild! Ensure is it in correct mode or corrcct remote software!
     ```
-7. Run others node to launch the robot, try to control and enjoy it!
+8. Run others node to launch the robot, try to control and enjoy it!
