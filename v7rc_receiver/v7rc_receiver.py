@@ -111,7 +111,7 @@ class V7RCReceiver(Node):
                     self.last_receive_time = now_time
                 if not_clear_data:
                     # Maybe have remaining data from the MCU's buffer, clear it!
-                    self.get_logger().info(f"Clear remaining datas...")
+                    self.get_logger().warn(f"Clear remaining datas... Don't connect the software!")
                     in_waiting = 0
                     while(True):
                         rlist, _, _, = select([ser], [], [], 1)
@@ -162,8 +162,8 @@ class V7RCReceiver(Node):
                                 # Update timer
                                 self.last_receive_time = now_time
                             # 解析 CH1 / CH2（格式：SRV1000200015001500#）
-                            ch1 = int(msg[3:7])
-                            ch2 = int(msg[7:11])
+                            ch1 = int(msg[0:4])
+                            ch2 = int(msg[4:8])
                             # Append it to deque, to processing by main thread
                             self.control_queue.append((ch1, ch2))
                             # Data vaild, so put down the flag
@@ -185,10 +185,11 @@ class V7RCReceiver(Node):
         # 以 1000 ~ 2000 對應到指令範圍
         # Scaling linear
         def scale_linear(val):
-            return max(min((val - 1500) / 500.0, self.max_linear), (self.max_linear * -1.0))
+            # (val - 1500) / 500.0 will scale value to +1 to -1
+            return max(min((val - 1500) / 500.0 * self.max_linear, self.max_linear), (self.max_linear * -1.0))
         # Scaling angular
         def scale_angular(val):
-            return max(min((val - 1500) / 500.0, self.max_angular), (self.max_angular * -1.0))
+            return max(min((val - 1500) / 500.0 * self.max_angular, self.max_angular), (self.max_angular * -1.0))
         # Make twist message
         twist = Twist()
         # Put the received command in
