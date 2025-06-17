@@ -72,16 +72,16 @@ class V7RCReceiver(Node):
                 if not (msg.startswith("SRV") or len(msg) < 20 or msg.endswith("#")):
                     invaild = True
                     continue
-                # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
-                if((now_time - self.last_receive_time) / 1e6 > 3000):
-                    self.get_logger().info(f"Got new control signal from {addr}!")
-                    # Update timer
-                    self.last_receive_time = now_time
                 # 解析 CH1 / CH2（格式：SRV1000200015001500#）
                 ch1 = int(msg[3:7])
                 ch2 = int(msg[7:11])
                 # Append it to deque, to processing by main thread
                 self.control_queue.append((ch1, ch2))
+                # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
+                if((now_time - self.last_receive_time) / 1e6 > 3000):
+                    self.get_logger().info(f"Got new control signal from {addr}!")
+                    # Update timer
+                    self.last_receive_time = now_time
                 # Data vaild, so put down the flag
                 invaild = False
             # If it have another exception
@@ -132,39 +132,43 @@ class V7RCReceiver(Node):
                 if(rlist):
                     # Flag to vaildate the data correct or not
                     invaild = False
-                    if ser.in_waiting >= 2:
+                    if ser.in_waiting >= 3:
                         # Read first byte
                         header = ser.read(1)
                         # Not equal the packet head, skip this package
                         if header != b'S':
+                            invaild = True
                             continue
                         # Continue read the header
                         header += ser.read(2)
                         # Check header vaild
-                        vaild_header = header == b'RV'
-                        if vaild_header:
-                            # If length not match
-                            if ser.in_waiting < 17:
-                                invaild = True
-                                continue
-                            # Read remaining 17 bytes (to #)
-                            msg = ser.read(17).decode()
-                            # Footer check
-                            if msg[-3:] != '#':
-                                invaild = True
-                                continue
-                            # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
-                            if((now_time - self.last_receive_time) / 1e6 > 3000):
-                                self.get_logger().info(f"Got new control signal from {uart_port}!")
-                                # Update timer
-                                self.last_receive_time = now_time
-                            # 解析 CH1 / CH2（格式：SRV1000200015001500#）
-                            ch1 = int(msg[0:4])
-                            ch2 = int(msg[4:8])
-                            # Append it to deque, to processing by main thread
-                            self.control_queue.append((ch1, ch2))
-                            # Data vaild, so put down the flag
-                            invaild = False
+                        if header != b'SRV':
+                            invaild = True
+                            continue
+                        # If length not match
+                        if ser.in_waiting < 17:
+                            invaild = True
+                            continue
+                        # Read remaining 17 bytes (to #)
+                        msg = ser.read(17)
+                        # Footer check
+                        if msg[-1:] != b'#':
+                            invaild = True
+                            continue
+                        # Decode data
+                        msg = msg.decode()
+                        # 解析 CH1 / CH2（格式：SRV1000200015001500#）
+                        ch1 = int(msg[0:4])
+                        ch2 = int(msg[4:8])
+                        # Append it to deque, to processing by main thread
+                        self.control_queue.append((ch1, ch2))
+                        # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
+                        if((now_time - self.last_receive_time) / 1e6 > 3000):
+                            self.get_logger().info(f"Got new control signal from {uart_port}!")
+                            # Update timer
+                            self.last_receive_time = now_time
+                        # Data vaild, so put down the flag
+                        invaild = False
             # If it have another exception
             except Exception as e:
                 self.get_logger().warn(f"UART receive error: {e}")
