@@ -125,8 +125,7 @@ class V7RCReceiver(Node):
                             not_clear_data = False
                             break
                 # Receiving data
-                # Packet format: RCSRV1000200015001500#EO
-                # Header = RC, Footer = EO
+                # Packet format: SRV1000200015001500
                 # V7RC's header: SRV and #
                 # Block if it not have in waiting data to prevent high cpu usage
                 rlist, _, _, = select([ser], [], [], 0.01)
@@ -137,23 +136,21 @@ class V7RCReceiver(Node):
                         # Read first byte
                         header = ser.read(1)
                         # Not equal the packet head, skip this package
-                        if header != b'R':
+                        if header != b'S':
                             continue
                         # Continue read the header
-                        header += ser.read(1)
+                        header += ser.read(2)
                         # Check header vaild
-                        vaild_header = header == b'RC'
+                        vaild_header = header == b'RV'
                         if vaild_header:
-                            # Read V7RC Packet's header
-                            v7rc_header = ser.read(3)
-                            # If length not match and header not math correct mode
-                            if ser.in_waiting < 19 or v7rc_header != b'SRV':
+                            # If length not match
+                            if ser.in_waiting < 17:
                                 invaild = True
                                 continue
-                            # Read remaining 19 bytes (to # and EO)
-                            msg = ser.read(19).decode()
+                            # Read remaining 17 bytes (to #)
+                            msg = ser.read(17).decode()
                             # Footer check
-                            if msg[-3:] != '#EO':
+                            if msg[-3:] != '#':
                                 invaild = True
                                 continue
                             # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
