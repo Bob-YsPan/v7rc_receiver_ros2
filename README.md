@@ -12,24 +12,32 @@ Use V7RC app's WiFi-UDP mode as the ROS car's controller!
     ```
 2. Clone this repo under `src` folder!
     ```
-    git clone https://github.com/Bob-YsPan/v7rc_receiver_ros2_udp.git v7rc_udp_receiver
+    git clone https://github.com/Bob-YsPan/v7rc_receiver_ros2.git v7rc_receiver
     ```
-4. Build package
+3. Build package
     ```
     cd ~/ros2_ws
-    colcon build --packages-select v7rc_udp_receiver
+    colcon build --packages-select v7rc_receiver
     ```
-5. Run it!
+4. Run it!
     ```
-    ros2 run v7rc_udp_receiver v7rc_udp_receiver
+    # Start by UDP protocol
+    ros2 run v7rc_receiver v7rc_udp_receiver
+    # Start by UART protocol (Need a MCU do the convertion, make PC can receive control protocol like BLE)
+    ros2 run v7rc_receiver v7rc_uart_receiver
     ```
    You can run it by pass the maxinum speed! (Default: `0.5 m/s linear, 1.0 rad/s angular`)
     ```
-    ros2 run v7rc_udp_receiver v7rc_udp_receiver --ros-args -p max_angular:=2.5 -p max_linear:=1.0
+    ros2 run v7rc_receiver v7rc_udp_receiver --ros-args -p max_angular:=2.5 -p max_linear:=1.0
     ```
-6. Find your PC's IP that run this node, connect your phone under same subnet, and then set your V7RC app's connect mode to Wi-Fi, then fill in the setting:
+5. (If you are using UDP mode) Find your PC's IP that run this node, connect your phone under same subnet, and then set your V7RC app's connect mode to Wi-Fi, then fill in the setting:
     * IP: `Your PC's IP`
     * Port(連接埠): `6188` (Default)
+6. (If you are using UART mode) UDEV rules for Raspberry Pi Pico W to receives the controls, you can replace vendor id and product id to meet your needs:
+    `/etc/udev/rules.d/v7rc_receiver.rules`
+    ```
+    KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0005", MODE:="0666", SYMLINK+="v7rc_controller"
+    ```
 7. It will auto connect, back to the remote screen, make sure the log like this:
     ```
     [INFO] [1749478043.049440469] [v7rc_udp_receiver]: UDP listening on 0.0.0.0:6188
@@ -38,13 +46,21 @@ Use V7RC app's WiFi-UDP mode as the ROS car's controller!
     [INFO] [1749478070.100631637] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!
     [INFO] [1749478073.101192725] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!    < Note: This log will print each 3 seconds if app is running at remote screen!
     ```
+    Or like this when at UART mode
+    ```
+    [INFO] [1750146930.765994766] [v7rc_receiver]: Serial port opened /dev/v7rc_controller:115200
+    [WARN] [1750146930.766355076] [v7rc_receiver]: Max *Linear* speed = 0.5 m/s, make sure it will not too fast!
+    [INFO] [1750146930.767139088] [v7rc_receiver]: Clear remaining datas...
+    [WARN] [1750146930.767324150] [v7rc_receiver]: Max *Angular* speed = 1.0 rad/s, make sure it will not too fast!
+    [INFO] [1750146931.769270955] [v7rc_receiver]: Already clear remaining 0 bytes data in serial!
+    [INFO] [1750146936.803052883] [v7rc_receiver]: Got new control signal from /dev/v7rc_controller!
+    [INFO] [1750146939.832484817] [v7rc_receiver]: Got new control signal from /dev/v7rc_controller!
+    [INFO] [1750146942.862727636] [v7rc_receiver]: Got new control signal from /dev/v7rc_controller!
+    ```
    If you got this error, make sure your V7RC is in `CAR (車輛)` mode!
     ```
-    [INFO] [1749478077.280239942] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!
     [WARN] [1749478077.281304232] [v7rc_udp_receiver]: Data Invaild! Ensure is it in correct mode or corrcct remote software!
-    [INFO] [1749478080.299411753] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!
     [WARN] [1749478080.300307321] [v7rc_udp_receiver]: Data Invaild! Ensure is it in correct mode or corrcct remote software!
-    [INFO] [1749478083.329775143] [v7rc_udp_receiver]: Got new control signal from ('192.168.1.33', 6188)!
     [WARN] [1749478083.330704208] [v7rc_udp_receiver]: Data Invaild! Ensure is it in correct mode or corrcct remote software!
     ```
 8. Run others node to launch the robot, try to control and enjoy it!
