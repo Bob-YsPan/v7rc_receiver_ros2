@@ -7,7 +7,7 @@ led = Pin('LED', Pin.OUT)
 
 # 剖析資料
 def data_process(data: str):
-    print(f"RC{data}EO", end="")
+    print(f"{data}", end="")
         
 # 定義接收回呼函數，僅印出接收到的字串
 def rx_callback():
