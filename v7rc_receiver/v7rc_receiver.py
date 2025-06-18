@@ -16,7 +16,7 @@ class V7RCReceiver(Node):
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
 
         # 使用 deque 儲存接收到的最新控制值（CH1, CH2）
-        self.control_queue = deque(maxlen=1)
+        self.control_queue = deque(maxlen=2)
         self.control_queue.append((1500, 1500))  # 初始值（中立）
 
         # Timer to print the status if receiving command
@@ -193,9 +193,7 @@ class V7RCReceiver(Node):
         if len(self.control_queue) == 0:
             return
         # Get the data from deque
-        ch1, ch2 = self.control_queue[-1]
-        # Empty deque
-        self.control_queue.clear()
+        ch1, ch2 = self.control_queue.popleft()
         # CH1：水平轉向（angular.z），CH2：前後速度（linear.x）
         # 以 1000 ~ 2000 對應到指令範圍
         # Scaling linear
