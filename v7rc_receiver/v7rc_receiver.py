@@ -1,4 +1,3 @@
-from select import select
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -98,7 +97,7 @@ class V7RCReceiver(Node):
         # Flag to vaildate the data correct or not
         invaild = False
         # Open port
-        ser = serial.Serial(uart_port, uart_baud, timeout=0.1)
+        ser = serial.Serial(uart_port, uart_baud, timeout=0.01)
         self.get_logger().info(f"Serial port opened {uart_port}:{uart_baud}")
         # Loop for receive the signal
         while True:
@@ -114,61 +113,57 @@ class V7RCReceiver(Node):
                     self.get_logger().warn(f"Clear remaining datas... Don't connect the software!")
                     in_waiting = 0
                     while(True):
-                        rlist, _, _, = select([ser], [], [], 1)
-                        if (rlist):
-                            in_waiting += ser.in_waiting
-                            if(in_waiting > 0):
-                                ser.reset_input_buffer()
-                                ser.reset_output_buffer()
+                        buf = self.ser.read(1)
+                        in_waiting += self.ser.in_waiting + len(buf)
+                        if(in_waiting > 0):
+                            self.ser.reset_input_buffer()
+                            self.ser.reset_output_buffer()
                         else:
                             self.get_logger().info(f"Already clear remaining {in_waiting} bytes data in serial!")
-                            not_clear_data = False
                             break
-                # Receiving data
-                # Packet format: SRV1000200015001500
-                # V7RC's header: SRV and #
-                # Block if it not have in waiting data to prevent high cpu usage
-                rlist, _, _, = select([ser], [], [], 0.01)
-                if(rlist):
+                else:
+                    # Receiving data
+                    # Packet format: SRV1000200015001500
+                    # V7RC's header: SRV and #
+                    # Block if it not have in waiting data to prevent high cpu usage
                     # Flag to vaildate the data correct or not
                     invaild = False
-                    if ser.in_waiting >= 3:
-                        # Read first byte
-                        header = ser.read(1)
-                        # Not equal the packet head, skip this package
-                        if header != b'S':
-                            invaild = True
-                            continue
-                        # Continue read the header
-                        header += ser.read(2)
-                        # Check header vaild
-                        if header != b'SRV':
-                            invaild = True
-                            continue
-                        # If length not match
-                        if ser.in_waiting < 17:
-                            invaild = True
-                            continue
-                        # Read remaining 17 bytes (to #)
-                        msg = ser.read(17)
-                        # Footer check
-                        if msg[-1:] != b'#':
-                            invaild = True
-                            continue
-                        # Decode data
-                        msg = msg.decode()
-                        # 解析 CH1 / CH2（格式：SRV1000200015001500#）
-                        ch1 = int(msg[0:4])
-                        ch2 = int(msg[4:8])
-                        # Append it to deque, to processing by main thread
-                        self.control_queue.append((ch1, ch2))
-                        # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
-                        if((now_time - self.last_receive_time) / 1e6 > 3000):
-                            self.get_logger().info(f"Got new control signal from {uart_port}!")
-                            # Update timer
-                            self.last_receive_time = now_time
-                        # Data vaild, so put down the flag
-                        invaild = False
+                    # Read first byte
+                    header = ser.read(1)
+                    # Not equal the packet head, skip this package
+                    if header != b'S':
+                        invaild = True
+                        continue
+                    # Continue read the header
+                    header += ser.read(2)
+                    # Check header vaild
+                    if header != b'SRV':
+                        invaild = True
+                        continue
+                    # If length not match
+                    if ser.in_waiting < 17:
+                        invaild = True
+                        continue
+                    # Read remaining 17 bytes (to #)
+                    msg = ser.read(17)
+                    # Footer check
+                    if msg[-1:] != b'#':
+                        invaild = True
+                        continue
+                    # Decode data
+                    msg = msg.decode()
+                    # 解析 CH1 / CH2（格式：SRV1000200015001500#）
+                    ch1 = int(msg[0:4])
+                    ch2 = int(msg[4:8])
+                    # Append it to deque, to processing by main thread
+                    self.control_queue.append((ch1, ch2))
+                    # 接收期間每3秒印一次提示，讓使用者知道資料仍在接收中(Heartbeat)
+                    if((now_time - self.last_receive_time) / 1e6 > 3000):
+                        self.get_logger().info(f"Got new control signal from {uart_port}!")
+                        # Update timer
+                        self.last_receive_time = now_time
+                    # Data vaild, so put down the flag
+                    invaild = False
             # If it have another exception
             except Exception as e:
                 self.get_logger().warn(f"UART receive error: {e}")
