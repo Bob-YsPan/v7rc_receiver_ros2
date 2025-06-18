@@ -120,6 +120,7 @@ class V7RCReceiver(Node):
                             ser.reset_output_buffer()
                         else:
                             self.get_logger().info(f"Already clear remaining {in_waiting} bytes data in serial!")
+                            not_clear_data = False
                             break
                 else:
                     # Receiving data
