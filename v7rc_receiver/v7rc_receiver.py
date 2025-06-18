@@ -92,74 +92,78 @@ class V7RCReceiver(Node):
         # UART Port and baud
         uart_port = '/dev/v7rc_controller'
         uart_baud = 115200
-        # Flag to empty data
-        not_clear_data = True
         # Flag to vaildate the data correct or not
         invaild = False
         # Open port
         ser = serial.Serial(uart_port, uart_baud, timeout=0.01)
         self.get_logger().info(f"Serial port opened {uart_port}:{uart_baud}")
-        # Loop for receive the signal
+        # Loop for receive the signal, define some variable first
+        buf = b''
+        recv_step = 0
         while True:
             try:
                 # Current timestamp
                 now_time = self.get_clock().now().nanoseconds
-                # Hint user if still get invaild flag
-                if((now_time - self.last_receive_time) / 1e6 > 3000 and invaild):
-                    self.get_logger().warn(f"Data invaild detected! Check remote software's setting or connection")
-                    self.last_receive_time = now_time
-                if not_clear_data:
+                # Clearing the remaining data in the buffer
+                if recv_step == 0:
                     # Maybe have remaining data from the MCU's buffer, clear it!
                     self.get_logger().warn(f"Clear remaining datas... Don't connect the software!")
                     # Increase timeout to 1s to ensure remaining data send
                     ser.timeout = 1
                     in_waiting = 0
-                    while(True):
-                        buf = ser.read(1)
-                        in_waiting += ser.in_waiting + len(buf)
-                        if(ser.in_waiting + len(buf) > 0):
-                            ser.reset_input_buffer()
-                            ser.reset_output_buffer()
-                        else:
-                            self.get_logger().info(f"Already clear remaining {in_waiting} bytes data in serial!")
-                            not_clear_data = False
-                            # Back timeout to 10ms
-                            ser.timeout = 0.01
-                            break
-                else:
+                    buf = ser.read(1)
+                    in_waiting += ser.in_waiting + len(buf)
+                    if(ser.in_waiting + len(buf) > 0):
+                        ser.reset_input_buffer()
+                        ser.reset_output_buffer()
+                    else:
+                        self.get_logger().info(f"Already clear remaining {in_waiting} bytes data in serial!")
+                        # Back timeout to 10ms
+                        ser.timeout = 0.01
+                        recv_step = 1
+                # Header receiving and vaildation
+                elif recv_step == 1:
+                    # Hint user if still get invaild flag and back to first step
+                    if((now_time - self.last_receive_time) / 1e6 > 3000 and invaild):
+                        self.get_logger().warn(f"Data invaild detected! Check remote software's setting or connection")
+                        self.last_receive_time = now_time
                     # Receiving data
                     # Packet format: SRV1000200015001500
                     # V7RC's header: SRV and #
                     # Block if it not have in waiting data to prevent high cpu usage
-                    # Flag to vaildate the data correct or not
-                    invaild = False
-                    # Read first byte
+                    # Read first byte, if not received header, just waiting
                     header = ser.read(1)
-                    # If not received header, just waiting
-                    if len(header) == 0:
-                        continue
-                    # Not equal the packet head, skip this package
-                    if header != b'S':
-                        invaild = True
-                        continue
+                    # Not equal the packet head or empty, skip this package
+                    if header == b'S':
+                        recv_step = 2
+                # Full header vaildation
+                elif recv_step == 2:
                     # Continue read the header
                     header += ser.read(2)
                     # Check header vaild
-                    if header != b'SRV':
+                    if header == b'SRV':
+                        recv_step = 3
+                    else:
+                        recv_step = 1
                         invaild = True
-                        continue
-                    # If length not match
-                    if ser.in_waiting < 17:
+                # Length check and data receiving
+                elif recv_step == 3:
+                    # If length not match, wait more data
+                    if ser.in_waiting >= 17:
+                        # Read remaining 17 bytes (to #)
+                        buf = ser.read(17)
+                        recv_step = 4
+                # Footer check
+                elif recv_step == 4:
+                    if buf[-1:] != b'#':
                         invaild = True
-                        continue
-                    # Read remaining 17 bytes (to #)
-                    msg = ser.read(17)
-                    # Footer check
-                    if msg[-1:] != b'#':
-                        invaild = True
-                        continue
+                        recv_step = 1
+                    else:
+                        recv_step = 5
+                # Decode and finish
+                elif recv_step == 5:
                     # Decode data
-                    msg = msg.decode()
+                    msg = buf.decode()
                     # 解析 CH1 / CH2（格式：SRV1000200015001500#）
                     ch1 = int(msg[0:4])
                     ch2 = int(msg[4:8])
@@ -172,6 +176,8 @@ class V7RCReceiver(Node):
                         self.last_receive_time = now_time
                     # Data vaild, so put down the flag
                     invaild = False
+                    # Back to the first step to receiving next
+                    recv_step = 1
             # If it have another exception
             except Exception as e:
                 self.get_logger().warn(f"UART receive error: {e}")
