@@ -132,7 +132,7 @@ class V7RCReceiver(Node):
                     # Read first byte
                     header = ser.read(1)
                     # Not equal the packet head, skip this package
-                    if header != b'S':
+                    if header != b'S' and len(header) > 0:
                         invaild = True
                         continue
                     # Continue read the header
