@@ -113,11 +113,11 @@ class V7RCReceiver(Node):
                     self.get_logger().warn(f"Clear remaining datas... Don't connect the software!")
                     in_waiting = 0
                     while(True):
-                        buf = self.ser.read(1)
-                        in_waiting += self.ser.in_waiting + len(buf)
+                        buf = ser.read(1)
+                        in_waiting += ser.in_waiting + len(buf)
                         if(in_waiting > 0):
-                            self.ser.reset_input_buffer()
-                            self.ser.reset_output_buffer()
+                            ser.reset_input_buffer()
+                            ser.reset_output_buffer()
                         else:
                             self.get_logger().info(f"Already clear remaining {in_waiting} bytes data in serial!")
                             break
