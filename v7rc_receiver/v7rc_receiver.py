@@ -122,7 +122,7 @@ class V7RCReceiver(Node):
                             self.get_logger().warn(f"Data still incoming... Are you disconnect the software?")
                             self.last_receive_time = now_time
                     else:
-                        self.get_logger().info(f"Already clear remaining at least {in_waiting} bytes data in serial!")
+                        self.get_logger().info(f"Serial buffer clear successfully!")
                         # Back timeout to 10ms
                         ser.timeout = 0.01
                         recv_step = 1 
