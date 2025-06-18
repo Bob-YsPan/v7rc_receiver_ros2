@@ -104,23 +104,28 @@ class V7RCReceiver(Node):
             try:
                 # Current timestamp
                 now_time = self.get_clock().now().nanoseconds
-                # Clearing the remaining data in the buffer
+                # Hint user and increase timer
                 if recv_step == 0:
                     # Maybe have remaining data from the MCU's buffer, clear it!
                     self.get_logger().warn(f"Clear remaining datas... Don't connect the software!")
                     # Increase timeout to 1s to ensure remaining data send
                     ser.timeout = 1
-                    in_waiting = 0
+                    recv_step = 10
+                # Start clearing the remaining data in the buffer
+                elif recv_step == 10:
                     buf = ser.read(1)
-                    in_waiting += ser.in_waiting + len(buf)
-                    if(ser.in_waiting + len(buf) > 0):
+                    in_waiting = ser.in_waiting + len(buf)
+                    if(in_waiting > 0):
                         ser.reset_input_buffer()
                         ser.reset_output_buffer()
+                        if((now_time - self.last_receive_time) / 1e6 > 500):
+                            self.get_logger().warn(f"Data still incoming... Are you disconnect the software?")
+                            self.last_receive_time = now_time
                     else:
-                        self.get_logger().info(f"Already clear remaining {in_waiting} bytes data in serial!")
+                        self.get_logger().info(f"Already clear remaining at least {in_waiting} bytes data in serial!")
                         # Back timeout to 10ms
                         ser.timeout = 0.01
-                        recv_step = 1
+                        recv_step = 1 
                 # Header receiving and vaildation
                 elif recv_step == 1:
                     # Hint user if still get invaild flag and back to first step
